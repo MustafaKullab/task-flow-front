@@ -1,0 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=Mada:wght@400;500;600;700&display=swap");
+
+html,
+body,
+#app {
+  font-family: "Mada", sans-serif;
+}
+
+body {
+  margin: 0;
+  font-weight: 400;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
