@@ -32,6 +32,8 @@ export const useUserStore = defineStore("user", {
       const data = await response.json();
 
       this.user = data.user;
+
+      return response;
     },
 
     async updateAccount(user) {

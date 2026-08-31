@@ -1,8 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useUserStore } from "@/stores/userStore";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: "/",
+      redirect: { name: "homePage" },
+    },
     {
       path: "/signup",
       name: "signup",
@@ -53,6 +58,7 @@ const router = createRouter({
       component: () => import("@/views/DashboardPage.vue"),
       meta: {
         title: "Dashboard",
+        requiresAuth: true,
       },
     },
     {
@@ -61,6 +67,7 @@ const router = createRouter({
       component: () => import("@/views/MyTasks.vue"),
       meta: {
         title: "My Tasks",
+        requiresAuth: true,
       },
     },
     {
@@ -69,6 +76,7 @@ const router = createRouter({
       component: () => import("@/views/CreateTask.vue"),
       meta: {
         title: "Create Task",
+        requiresAuth: true,
       },
     },
     {
@@ -77,13 +85,30 @@ const router = createRouter({
       component: () => import("@/views/ProfilePage.vue"),
       meta: {
         title: "Profile",
+        requiresAuth: true,
       },
     },
   ],
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   document.title = to.meta.title;
+
+  if (!to.meta.requiresAuth) return true;
+
+  const userStore = useUserStore();
+
+  try {
+    const response = await userStore.getUserAfterSignIn();
+
+    if (response.ok) {
+      return true;
+    }
+
+    return { name: "signin" };
+  } catch {
+    return { name: "signin" };
+  }
 });
 
 export default router;
