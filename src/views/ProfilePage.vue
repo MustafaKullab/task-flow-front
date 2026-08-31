@@ -460,6 +460,7 @@ const updateProfile = async () => {
 
   if (data.success) {
     toast.success("Account information updated successfully.");
+    await userStore.getUserAfterSignIn();
   } else {
     toast.error("Unable to complete the request. Please try again.");
     if (data.errors.email) userError.value.username = data.errors.email;
@@ -483,8 +484,8 @@ const changePassword = async () => {
     else if (data.errors?.newPassword) userError.value.newPassword = data.errors.newPassword;
     else if (data.message === "Current password is not correct!")
       userError.value.currentPassword = "Current password is incorrect.";
-    else if (data.errors.password.message === "The minimum length of password must be 6 characters")
-      userError.value.confirmNewPassword = data.errors.password.message;
+    else if (data.errors.password)
+      userError.value.confirmNewPassword = "Password must be at least 6 characters long.";
   }
 };
 
