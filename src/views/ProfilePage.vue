@@ -474,13 +474,17 @@ const changePassword = async () => {
     password.currentPassword = "";
     password.newPassword = "";
     password.confirmNewPassword = "";
+    await userStore.getUserAfterSignIn();
   } else {
+    toast.error("Something went wrong. Please try again.");
     if (data.errors?.currentPassword) userError.value.currentPassword = data.errors.currentPassword;
     else if (data.errors?.confirmNewPassword)
       userError.value.confirmNewPassword = data.errors.confirmNewPassword;
     else if (data.errors?.newPassword) userError.value.newPassword = data.errors.newPassword;
     else if (data.message === "Current password is not correct!")
       userError.value.currentPassword = "Current password is incorrect.";
+    else if (data.errors.password.message === "The minimum length of password must be 6 characters")
+      userError.value.confirmNewPassword = data.errors.password.message;
   }
 };
 
