@@ -1793,10 +1793,10 @@ form {
         content: "";
         position: absolute;
         left: 8px;
-        top: 55%;
+        top: 50%;
         transform: translateY(-50%);
-        width: 10px;
-        height: 10px;
+        width: 9px;
+        height: 9px;
         border-radius: 50%;
       }
       &.todoStatus {
