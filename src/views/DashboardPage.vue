@@ -135,9 +135,21 @@
                     </div>
                   </div>
                   <div class="tableContainer position-relative">
+                    <div v-if="taskStore.loading" class="text-center py-5">Loading tasks...</div>
+
+                    <div v-else-if="taskStore.error" class="alert alert-danger mx-4">
+                      {{ taskStore.error }}
+                      <button
+                        class="btn btn-sm btn-outline-danger ms-2"
+                        @click="taskStore.refreshTasks()"
+                      >
+                        Retry
+                      </button>
+                    </div>
                     <div
                       class="table-responsive position-relative"
                       style="height: 276px; overflow: auto"
+                      v-else
                     >
                       <table class="table">
                         <thead>
@@ -209,7 +221,7 @@
                             </td>
                             <td class="dueDate">
                               <div class="text-muted mt-1">
-                                {{ new Date(task.dueDate).toLocaleDateString("en-GB") }}
+                                {{ task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "-" }}
                               </div>
                             </td>
                             <td>
@@ -277,7 +289,7 @@
                       </table>
                     </div>
                     <div
-                      v-if="taskStore.tasks.length === 0"
+                      v-if="!taskStore.loading && !taskStore.error && taskStore.tasks.length === 0"
                       class="position-absolute noTasksMessage"
                       style="left: 50%; top: 60%; transform: translate(-50%, -50%)"
                     >
@@ -1298,7 +1310,7 @@ const updateTheTask = async () => {
 
   if (data.success) {
     toast.success("Task updated successfully.");
-    await taskStore.getTasks();
+    await taskStore.refreshTasks();
   } else {
     updateTaskError.value = data.errors.task;
     statusTaskError.value = "Please Choose another status to update.";
@@ -1326,7 +1338,7 @@ const deleteTask = async (taskId) => {
     closeModal(taskId);
     toast.success("Task deleted successfully.");
     getTasksUsingPeriod();
-    await taskStore.getTasks();
+    await taskStore.refreshTasks();
   } else {
     closeModal(taskId);
     toast.error("Unable to delete the task. Please try again.");

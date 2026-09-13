@@ -56,7 +56,7 @@
                     style="box-shadow: none"
                   />
                   <div class="valid-feedback">Task name looks good!</div>
-                  <div class="invalid-feedback">Task Name is Required</div>
+                  <div class="invalid-feedback">  {{ taskErrors.name || "Task Name is Required" }}</div>
                 </div>
                 <div class="col-md-6 mb-3">
                   <label for="taskStatus" class="form-label">State</label>
@@ -107,13 +107,13 @@
                     style="height: 100px; box-shadow: none"
                   ></textarea>
                   <div class="valid-feedback">Description looks good!</div>
-                  <div class="invalid-feedback">Task Description is required</div>
+                  <div class="invalid-feedback">  {{ taskErrors.description || "Task Description is Required" }}</div>
                 </div>
 
                 <div
                   class="buttons pt-2 mt-2 border-top d-flex align-items-center justify-content-end gap-2 pt-3"
                 >
-                  <button class="cancle btn border">Cancle</button>
+                  <button class="cancle btn border" type="button">Cancle</button>
                   <button class="create btn btn-primary d-flex align-items-center gap-2">
                     <span><i class="bi bi-plus"></i></span><span>Create Task</span>
                   </button>
@@ -162,14 +162,13 @@ watch([() => task.value.name, () => task.value.description], () => {
 
 // Function to create new task
 const createNewTask = async () => {
-  const data = await taskStore.createTask(task.value);
+  taskErrors.value = { name: "", description: "" };
 
-  if (!data.success) {
-    taskErrors.value.name = data.errors.name;
-    taskErrors.value.description = data.errors.description;
-    toast.error("Something went wrong, Please try again.", { position: "top-center" });
-  } else {
+  try {
+     await taskStore.createTask(task.value);
+
     toast.success("Task created successfully.", { position: "top-center" });
+
     task.value = {
       name: "",
       description: "",
@@ -177,8 +176,16 @@ const createNewTask = async () => {
       priority: "medium",
       dueDate: "",
     };
+  } catch (err) {
+    if (err?.status === 400 && err?.fieldErrors) {
+      taskErrors.value.name = err.fieldErrors.name || "";
+      taskErrors.value.description = err.fieldErrors.description || "";
+    }
+
+    toast.error(err?.message || "Something went wrong, Please try again.", {
+      position: "top-center",
+    });
   }
 };
 </script>
 
-<style lang="scss" scoped></style>
