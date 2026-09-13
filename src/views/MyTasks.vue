@@ -93,6 +93,16 @@
             </div>
 
             <div class="tableContainer position-relative border rounded">
+              <div v-if="taskStore.loading" class="text-center py-5">
+  Loading tasks...
+</div>
+
+<div v-else-if="taskStore.error" class="alert alert-danger m-3">
+  {{ taskStore.error }}
+  <button class="btn btn-sm btn-outline-danger ms-2" @click="taskStore.refreshTasks()">
+    Retry
+  </button>
+</div>
               <div
                 class="table-responsive rounded"
                 style="
@@ -102,6 +112,7 @@
                   flex-direction: column;
                   justify-content: space-between;
                 "
+                v-else
               >
                 <table class="table">
                   <thead>
@@ -188,7 +199,7 @@
                       </td>
                       <td class="dueDate">
                         <div class="text-muted mt-1">
-                          {{ new Date(task.dueDate).toLocaleDateString("en-GB") }}
+                          {{ task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "-" }}
                         </div>
                       </td>
                       <td class="createdAt">
@@ -261,7 +272,7 @@
                 </table>
 
                 <div
-                  v-if="!hasActiveFilters && taskStore.tasks.length === 0"
+                  v-if="!taskStore.loading && !taskStore.error && !hasActiveFilters && taskStore.tasks.length === 0"
                   class="position-absolute noTasksMessage"
                   style="left: 50%; top: 52%; transform: translate(-50%, -50%)"
                 >
@@ -292,7 +303,7 @@
               </div>
 
               <div
-                v-if="hasActiveFilters && taskStore.tasks.length === 0"
+                v-if="!taskStore.loading && !taskStore.error && hasActiveFilters && taskStore.tasks.length === 0"
                 class="position-absolute noTasksMessage"
                 style="left: 50%; top: 52%; transform: translate(-50%, -50%)"
               >
@@ -322,7 +333,7 @@
               <div
                 class="pagination p-3 pt-0 d-flex justify-content-between align-items-center flex-column flex-lg-row"
                 style="width: 100%"
-                v-if="taskStore.tasks.length > 0"
+                v-if="!taskStore.loading && !taskStore.error && taskStore.tasks.length > 0"
               >
                 <div class="details text-muted" v-if="taskStore.pagination">
                   Showing {{ taskStore.pagination.currentPage }}-{{
@@ -1156,6 +1167,7 @@ import { Modal } from "bootstrap/dist/js/bootstrap.bundle.min";
 
 // Define the store
 const taskStore = useTaskStore();
+const statusTaskError = ref("");
 
 // Define the variables of select
 const filter = ref({
@@ -1171,7 +1183,7 @@ const FilterTasksUsingSearch = () => {
   clearTimeout(timer);
 
   timer = setTimeout(async () => {
-    await taskStore.getTasks(filter.value, { limit: 4 });
+    await taskStore.getTasks(filter.value, {page: 1 , limit: 4 });
   }, 500);
 };
 
@@ -1188,6 +1200,8 @@ const ClearFilters = async () => {
     prioritySelect: "default",
     sortSelect: "default",
   };
+
+  await taskStore.getTasks({}, { page: 1, limit: 4 });
 };
 
 watch(
@@ -1202,7 +1216,8 @@ const hasActiveFilters = computed(() => {
   return (
     filter.value.searchInput ||
     filter.value.statusSelect !== "default" ||
-    filter.value.prioritySelect !== "default"
+    filter.value.prioritySelect !== "default" ||
+    filter.value.sortSelect !== "default"
   );
 });
 
@@ -1211,6 +1226,8 @@ const goToPage = async (page) => {
 };
 
 const pages = computed(() => {
+  if (!taskStore.pagination?.totalPages || !taskStore.pagination?.currentPage) return [];
+
   const total = taskStore.pagination.totalPages;
   const current = taskStore.pagination.currentPage;
 
@@ -1271,14 +1288,16 @@ watch(
 );
 
 const updateTheTask = async () => {
-  const data = await taskStore.updateTask(updateTask.value);
-
-  if (data.success) {
+  try {
+    await taskStore.updateTask(updateTask.value);
     toast.success("Task updated successfully.");
-    await taskStore.getTasks();
-  } else {
-    updateTaskError.value = data.errors.task;
-    toast.error("Unable to update the task. Please try again.");
+    await taskStore.refreshTasks();
+  } catch (err) {
+    toast.error(err?.message || "Unable to update the task.");
+
+    if (err?.status === 400 && err?.fieldErrors) {
+      updateTaskError.value = err?.message;
+     }
   }
 };
 
@@ -1303,7 +1322,7 @@ const deleteTask = async (taskId) => {
   if (data.success) {
     closeModal(taskId);
     toast.success("Task deleted successfully.");
-    await taskStore.getTasks();
+    await taskStore.refreshTasks();
   } else {
     closeModal(taskId);
     toast.error("Unable to delete the task. Please try again.");
@@ -1313,8 +1332,6 @@ const deleteTask = async (taskId) => {
 
 onMounted(async () => {
   await taskStore.getTasks();
-  console.log(taskStore.pagination);
-  console.log(pages.value);
 });
 </script>
 
